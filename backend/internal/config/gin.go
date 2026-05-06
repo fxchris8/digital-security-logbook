@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 
 	"backend/internal/models/web"
 
@@ -36,6 +38,14 @@ func NewGin(config *viper.Viper, log *logrus.Logger) *gin.Engine {
 	}
 
 	app := gin.Default()
+	uploadDir := strings.TrimSpace(config.GetString("UPLOAD_DIR"))
+	if uploadDir == "" {
+		uploadDir = "storage/uploads"
+	}
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		log.Fatalf("failed to create upload directory: %v", err)
+	}
+	app.Static("/uploads", uploadDir)
 
 	// CORS config - Custom function to allow all origins with credentials
 	app.Use(func(c *gin.Context) {

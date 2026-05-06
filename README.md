@@ -1,448 +1,413 @@
-# Talent Development System (TDS)
+# Digital Security Logbook
 
-Sistem manajemen talent development untuk evaluasi dan penilaian crew kapal.
+Digital Security Logbook adalah aplikasi pencatatan tamu berbasis web untuk security desk. Aplikasi ini menyediakan form registrasi tamu, upload foto identitas/selfie, pencatatan waktu masuk, QR checkout untuk mencatat waktu keluar, dan dashboard admin untuk melihat serta mengelola data logbook.
 
-## 📚 Documentation
+## Fitur Utama
 
-- **[Development Setup (Docker)](DOCKER_DEV_GUIDE.md)** - Setup development dengan Docker Compose
-- **[Production Deployment](PRODUCTION_DEPLOYMENT.md)** - Deploy ke production server
-- **[Dev vs Prod Comparison](DEV_VS_PROD.md)** - Perbedaan setup dev dan production
+- Registrasi tamu melalui halaman guest.
+- Upload foto tanda pengenal/selfie ke storage backend.
+- Generate QR checkout per kunjungan.
+- Checkout tamu melalui scan QR.
+- Dashboard logbook dengan pencarian dan pagination.
+- Edit dan hapus data logbook.
+- Penyimpanan data ke MySQL.
 
 ## Tech Stack
 
-- **Backend**: Go (Gin Framework, GORM)
-- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
-- **Database**: MySQL 8.0
-- **Deployment**: Docker & Docker Compose
+- Backend: Go 1.24, Gin, GORM, MySQL driver
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Database: MySQL/MariaDB
+- Deployment: Docker, Docker Compose, Traefik
 
-## Prerequisites
+## Struktur Project
 
-### For Docker Development (Recommended)
-
-- Docker & Docker Compose
-- Git
-
-### For Local Development (Without Docker)
-
-- Go 1.24.0 atau lebih baru
-- Node.js 20 atau lebih baru
-- MySQL 8.0
-
-## 🚀 Quick Start (Docker)
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd talent-development-system
-
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Access:
-# Frontend: http://localhost:3001
-# Backend: http://localhost:8081
-# Health: http://localhost:8081/health
+```text
+digital-security-logbook/
+├── backend/
+│   ├── cmd/
+│   │   ├── api/          # HTTP API server
+│   │   ├── migrate/      # Migration binary
+│   │   ├── seed-csv/     # Seeder CSV
+│   │   ├── seed-cfit/    # Seeder tambahan
+│   │   └── clear-data/   # Utility hapus data
+│   ├── internal/
+│   │   ├── config/       # Config, DB, Gin, bootstrap
+│   │   ├── controllers/  # HTTP handlers
+│   │   ├── models/       # Domain dan request/response models
+│   │   ├── repositories/ # Query database
+│   │   ├── routers/      # Route registration
+│   │   └── services/     # Business logic
+│   ├── storage/          # Upload storage lokal
+│   ├── Dockerfile
+│   └── go.mod
+├── frontend/
+│   ├── src/app/
+│   │   ├── dashboard/    # Dashboard admin logbook
+│   │   └── guest/        # Form registrasi tamu
+│   ├── public/
+│   ├── Dockerfile
+│   ├── Dockerfile.prod
+│   └── package.json
+├── docker-compose.yml
+├── docker-compose.prod.yml
+└── README.md
 ```
 
-Untuk dokumentasi lengkap, lihat [DOCKER_DEV_GUIDE.md](DOCKER_DEV_GUIDE.md)
+## Prasyarat
 
----
+Untuk development lokal:
 
-## Setup Development (Lokal tanpa Docker)
+- Go 1.24 atau lebih baru
+- Node.js 20 atau lebih baru
+- MySQL/MariaDB
+- npm
+
+Untuk deployment Docker:
+
+- Docker
+- Docker Compose
+- Network Traefik eksternal bernama `traefik-net` jika memakai `docker-compose.prod.yml`
+
+## Setup Lokal
 
 ### 1. Clone Repository
 
 ```bash
 git clone <repository-url>
-cd talent-development-system
+cd digital-security-logbook
 ```
 
-### 2. Setup Backend
+### 2. Setup Database
 
-#### 2.1 Konfigurasi Environment Variables
+Buat database MySQL:
 
-Buat file `.env` di folder `backend/`:
+```sql
+CREATE DATABASE digital_logbook;
+```
+
+Pastikan user database memiliki akses ke database tersebut.
+
+### 3. Setup Backend
 
 ```bash
 cd backend
-cp .env.example .env  # Jika ada file example, atau buat manual
+cp .env.example .env
 ```
 
-Isi file `backend/.env`:
+Contoh konfigurasi `backend/.env`:
 
 ```env
-WEB_PORT=8080
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=tds
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_IDLE=10
-DB_MAX=100
-DB_LIFETIME=300
-JWT_SECRET_KEY=talent-development-system-secret
 ENV=development
-LOG_LEVEL=6
-GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
-UNIOFFICE_LICENSE_KEY=your_unioffice_license_key
+WEB_PORT=8080
+GIN_MODE=debug
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=spil
+DB_PASS=spil
+DB_NAME=digital_logbook
+
+JWT_SECRET_KEY=change-this-secret
+BACKEND_PUBLIC_URL=http://localhost:8080
+FRONTEND_URL=http://localhost:3000
+APP_TIMEZONE=Asia/Jakarta
+
+UPLOAD_DIR=storage/uploads
+MAX_UPLOAD_SIZE=5242880
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
 
-#### 2.2 Install Dependencies
+Install dependencies dan jalankan backend:
 
 ```bash
 go mod download
-```
-
-#### 2.3 Setup Database
-
-Pastikan MySQL sudah berjalan, lalu buat database:
-
-```bash
-mysql -u root -p
-```
-
-```sql
-CREATE DATABASE tds;
-EXIT;
-```
-
-#### 2.4 Jalankan Migrasi Database
-
-```bash
-cd backend
-go run cmd/migrate/main.go
-```
-
-Output yang diharapkan:
-
-```
-Migration completed successfully
-```
-
-#### 2.5 Jalankan Seeder (Opsional)
-
-Untuk mengisi data awal dari CSV:
-
-```bash
-go run cmd/seed-csv/main.go
-```
-
-Output yang diharapkan:
-
-```
-Seeding users...
-Seeding assessments...
-Seeding aspects...
-...
-Seeding completed successfully
-```
-
-#### 2.6 Jalankan Backend Server
-
-```bash
 go run cmd/api/main.go
 ```
 
-Backend akan berjalan di `http://localhost:8080`
+Backend berjalan di:
 
-### 3. Setup Frontend
+```text
+http://localhost:8080
+```
 
-#### 3.1 Konfigurasi Environment Variables
+Catatan: saat API start, aplikasi menjalankan bootstrap schema logbook melalui GORM. Jika memakai migration binary secara manual:
 
-Buat file `.env` di folder `frontend/`:
+```bash
+go run cmd/migrate/main.go
+```
+
+### 4. Setup Frontend
 
 ```bash
 cd frontend
-cp .env.example .env  # Jika ada file example, atau buat manual
-```
-
-Isi file `frontend/.env`:
-
-```env
-JWT_SECRET=talent-development-system-secret
-NEXT_PUBLIC_API_ENDPOINT=http://localhost:8080
-GROQ_API_KEY=your_groq_api_key
-```
-
-#### 3.2 Install Dependencies
-
-```bash
+cp .env.example .env
 npm install
 ```
 
-#### 3.3 Jalankan Frontend Development Server
+Contoh konfigurasi `frontend/.env`:
+
+```env
+JWT_SECRET=change-this-secret
+NEXT_PUBLIC_API_ENDPOINT=http://localhost:8080
+NEXT_PUBLIC_BASE_PATH=
+```
+
+Jalankan frontend:
 
 ```bash
 npm run dev
 ```
 
-Frontend akan berjalan di `http://localhost:3000`
+Frontend berjalan di:
 
-## Deployment dengan Docker
+```text
+http://localhost:3000
+```
 
-### 1. Persiapan Environment Variables
+## Endpoint Utama
 
-Pastikan file `.env` sudah ada di folder `backend/` dan `frontend/` seperti pada setup development di atas.
+Backend menyediakan endpoint berikut:
 
-### 2. Build dan Jalankan Containers
+| Method | Endpoint | Keterangan |
+| --- | --- | --- |
+| GET | `/health` | Health check backend |
+| GET | `/api/logbooks` | List logbook dengan pagination |
+| POST | `/api/logbooks/upload-photo` | Upload foto tanda pengenal/selfie |
+| POST | `/api/logbooks/generate-qr` | Buat data logbook dan QR checkout |
+| GET | `/api/logbooks/checkout?token=...` | Checkout tamu dari QR |
+| GET | `/api/logbooks/:id/qr` | Ambil ulang QR checkout |
+| PUT | `/api/logbooks/:id` | Update data logbook |
+| DELETE | `/api/logbooks/:id` | Hapus data logbook |
+
+Contoh request list logbook:
 
 ```bash
-docker-compose up -d --build
+curl "http://localhost:8080/api/logbooks?anchor_id=0&page=next&page_size=10"
 ```
 
-Perintah ini akan:
+## Field Database Logbook
 
-- Build image untuk backend, frontend
-- Pull image MySQL 8.0
-- Membuat network `spil_tds`
-- Membuat volume `mysql_data` untuk persistensi database
-- Menjalankan semua services
+Tabel utama aplikasi adalah `data_logbook`. Field yang dipakai dashboard/API antara lain:
 
-### 3. Cek Status Containers
+- `tanggal`
+- `waktu_masuk`
+- `waktu_keluar`
+- `nama`
+- `alamat`
+- `nomor_polisi_kendaraan`
+- `foto_tanda_pengenal`
+- `perusahaan`
+- `janji_bertemu_dengan`
+- `keperluan`
+
+Jika database lama belum punya kolom nomor polisi kendaraan, tambahkan:
+
+```sql
+ALTER TABLE data_logbook
+ADD COLUMN nomor_polisi_kendaraan LONGTEXT
+AFTER alamat;
+```
+
+## Docker Development
+
+File `docker-compose.yml` menyediakan MySQL, backend, dan frontend untuk development berbasis container. Jalankan dari root project:
 
 ```bash
-docker-compose ps
+docker compose up -d --build
 ```
 
-Output yang diharapkan:
+Default service development:
 
-```
-NAME            IMAGE                                   STATUS
-tds_backend     talent-development-system-tds_backend   Up
-tds_db          mysql:8.0                               Up (healthy)
-tds_frontend    talent-development-system-tds_frontend  Up
-```
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8080`
+- MySQL: `localhost:3306`
+- Database default compose: `tds`
+- User default compose: `tds_user`
 
-### 4. Jalankan Migrasi Database (First Time Setup)
+Lihat logs:
 
 ```bash
-docker-compose exec tds_backend /app/main migrate
+docker compose logs -f
 ```
 
-Atau masuk ke container dan jalankan manual:
+Stop service:
 
 ```bash
-docker-compose exec tds_backend sh
-cd /app
-./migrate  # Jika binary migrate sudah dibuild terpisah
+docker compose down
 ```
 
-### 5. Jalankan Seeder (Opsional)
+Hapus volume database development:
 
 ```bash
-docker-compose exec tds_backend sh
-cd /app
-# Jalankan seeder jika binary tersedia
+docker compose down -v
 ```
 
-### 6. Akses Aplikasi
+## Production Deployment
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8080
-- **Database**: localhost:3306
+Production compose menggunakan `docker-compose.prod.yml` dengan container:
 
-### 7. Stop Containers
+- `dsl_backend_prod`
+- `dsl_frontend_prod`
+- external network `traefik-net`
+- Traefik route `/dsl-api` untuk backend
+- Traefik route `/dsl` untuk frontend
+
+### 1. Siapkan Network Traefik
+
+Jika belum ada:
 
 ```bash
-docker-compose down
+docker network create traefik-net
 ```
 
-Untuk stop dan hapus volumes (data database akan hilang):
+### 2. Siapkan File `.env` di Root Project
+
+`docker-compose.prod.yml` membaca `.env` dari root project.
+
+Contoh:
+
+```env
+DB_HOST=10.128.0.13
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your-db-password
+DB_NAME=digital_logbook
+
+JWT_SECRET=change-this-production-secret
+
+BACKEND_PUBLIC_URL=https://pe.spil.co.id/dsl-api
+NEXT_PUBLIC_API_ENDPOINT=https://pe.spil.co.id/dsl-api
+NEXT_PUBLIC_BASE_PATH=/dsl
+```
+
+Penting:
+
+- Untuk production compose, gunakan `DB_PASSWORD`, karena compose akan memetakannya ke `DB_PASS` di container backend.
+- `JWT_SECRET` dipakai frontend dan dipetakan ke `JWT_SECRET_KEY` untuk backend.
+- `NEXT_PUBLIC_API_ENDPOINT` harus menunjuk ke public API backend.
+- `NEXT_PUBLIC_BASE_PATH=/dsl` jika frontend disajikan melalui path `/dsl`.
+
+### 3. Build dan Jalankan
 
 ```bash
-docker-compose down -v
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-## Docker Services
-
-### tds_db (MySQL)
-
-- **Image**: mysql:8.0
-- **Port**: 3306
-- **Database**: tds
-- **User**: tds_user
-- **Password**: tds_password
-- **Root Password**: root_password
-- **Volume**: mysql_data (persistent storage)
-
-### tds_backend (Go API)
-
-- **Port**: 8080
-- **Environment**: Production
-- **Dependencies**: tds_db (menunggu database healthy sebelum start)
-
-### tds_frontend (Next.js)
-
-- **Port**: 3000
-- **Environment**: Production
-- **Dependencies**: tds_backend
-
-## Struktur Project
-
-```
-talent-development-system/
-├── backend/
-│   ├── cmd/
-│   │   ├── api/              # Main API server
-│   │   ├── migrate/          # Database migration
-│   │   └── seed-csv/         # CSV data seeder
-│   ├── internal/
-│   │   ├── config/           # Configuration
-│   │   ├── controllers/      # HTTP handlers
-│   │   ├── models/           # Data models
-│   │   ├── repositories/     # Database repositories
-│   │   └── services/         # Business logic
-│   ├── .env                  # Backend environment variables
-│   ├── Dockerfile
-│   └── go.mod
-├── frontend/
-│   ├── src/
-│   │   ├── app/              # Next.js app directory
-│   │   ├── components/       # React components
-│   │   └── lib/              # Utilities
-│   ├── .env                  # Frontend environment variables
-│   ├── Dockerfile
-│   └── package.json
-└── docker-compose.yml        # Docker orchestration
-```
-
-## Development Commands
-
-### Backend
+### 4. Cek Status dan Logs
 
 ```bash
-# Run server
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f
+```
+
+### 5. Akses Production
+
+Sesuai label Traefik bawaan:
+
+- Frontend: `https://pe.spil.co.id/dsl`
+- Backend API: `https://pe.spil.co.id/dsl-api`
+- Health check: `https://pe.spil.co.id/dsl-api/health`
+
+### 6. Stop Production Service
+
+```bash
+docker compose -f docker-compose.prod.yml down
+```
+
+Catatan: backend container menjalankan `./migrate` dan mencoba `./seed` melalui `backend/entrypoint.sh` saat startup. Jika tidak ingin seeder berjalan setiap container start, ubah `backend/entrypoint.sh` sebelum build image.
+
+## Perintah Development
+
+Backend:
+
+```bash
+cd backend
 go run cmd/api/main.go
-
-# Run migration
 go run cmd/migrate/main.go
-
-# Run seeder
-go run cmd/seed-csv/main.go
-
-# Run tests
 go test ./...
-
-# Build binary
-go build -o main cmd/api/main.go
+go build -o api ./cmd/api
 ```
 
-### Frontend
+Frontend:
 
 ```bash
-# Development server
+cd frontend
 npm run dev
-
-# Build for production
 npm run build
-
-# Start production server
-npm start
-
-# Lint code
+npm run start
 npm run lint
-
-# Fix lint issues
-npm run lint:fix
-
-# Format code
-npm run format
-
-# Type check
 npm run typecheck
+npm run format
 ```
 
 ## Troubleshooting
 
-### Backend tidak bisa connect ke database
+### Dashboard menampilkan `-` untuk kolom baru
 
-1. Pastikan MySQL sudah berjalan
-2. Cek kredensial database di `.env`
-3. Pastikan database `tds` sudah dibuat
+Pastikan:
 
-### Frontend tidak bisa fetch data dari backend
+- Kolom database sudah ada di database yang sama dengan `DB_HOST`, `DB_PORT`, dan `DB_NAME` backend.
+- Backend sudah direstart setelah perubahan model/query.
+- Respons API `/api/logbooks` sudah mengirim field JSON yang benar.
+- Tidak ada transaksi MySQL lama yang belum `COMMIT`/`ROLLBACK`.
 
-1. Pastikan backend sudah berjalan di port 8080
-2. Cek `NEXT_PUBLIC_API_ENDPOINT` di `frontend/.env`
-3. Cek console browser untuk error CORS atau network
+Contoh cek data:
 
-### Docker build gagal
-
-1. Pastikan Docker daemon sudah berjalan
-2. Pastikan file `.env` sudah ada di folder backend dan frontend
-3. Coba clean build:
-   ```bash
-   docker-compose down -v
-   docker-compose build --no-cache
-   docker-compose up -d
-   ```
-
-### Database container tidak healthy
-
-1. Cek logs: `docker-compose logs tds_db`
-2. Pastikan port 3306 tidak digunakan aplikasi lain
-3. Coba restart: `docker-compose restart tds_db`
-
-## Environment Variables Reference
-
-### Backend (.env)
-
-| Variable       | Description                          | Default                 |
-| -------------- | ------------------------------------ | ----------------------- |
-| WEB_PORT       | Port untuk backend server            | 8080                    |
-| DB_HOST        | MySQL host                           | localhost               |
-| DB_PORT        | MySQL port                           | 3306                    |
-| DB_NAME        | Nama database                        | tds                     |
-| DB_USER        | MySQL user                           | root                    |
-| DB_PASSWORD    | MySQL password                       | -                       |
-| JWT_SECRET_KEY | Secret key untuk JWT                 | -                       |
-| ENV            | Environment (development/production) | development             |
-| GROQ_API_KEY   | API key untuk Groq AI                | -                       |
-| GROQ_MODEL     | Model Groq yang digunakan            | llama-3.3-70b-versatile |
-
-### Frontend (.env)
-
-| Variable                 | Description                                      | Default               |
-| ------------------------ | ------------------------------------------------ | --------------------- |
-| JWT_SECRET               | Secret key untuk JWT (harus sama dengan backend) | -                     |
-| NEXT_PUBLIC_API_ENDPOINT | URL backend API untuk client-side                | http://localhost:8080 |
-| GROQ_API_KEY             | API key untuk Groq AI                            | -                     |
-
-## Git Workflow
-
-### Pre-commit Hooks
-
-Project ini menggunakan Husky untuk pre-commit hooks yang akan otomatis menjalankan:
-
-- ESLint
-- Prettier format check
-- TypeScript type check
-
-Jika ada error, commit akan dibatalkan. Fix error terlebih dahulu sebelum commit.
-
-### Commit Changes
-
-```bash
-git add .
-git commit -m "feat: description"
-git push
+```sql
+SELECT id, nama, nomor_polisi_kendaraan
+FROM data_logbook
+WHERE id = 1;
 ```
 
-## Contributing
+### Backend tidak bisa connect database
 
-1. Buat branch baru dari `main`
-2. Commit changes dengan pesan yang jelas
-3. Push ke remote repository
-4. Buat Pull Request
+Pastikan:
+
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, dan `DB_NAME` benar.
+- Database bisa diakses dari host/container backend.
+- Firewall/security group mengizinkan koneksi ke MySQL.
+
+### Foto upload tidak muncul
+
+Pastikan:
+
+- `UPLOAD_DIR` backend benar.
+- Volume `/app/storage` terpasang di Docker production.
+- `BACKEND_PUBLIC_URL` mengarah ke URL backend publik.
+- Route `/uploads/...` dapat diakses dari browser.
+
+### Frontend tidak bisa fetch API
+
+Pastikan:
+
+- `NEXT_PUBLIC_API_ENDPOINT` benar saat build frontend.
+- Backend health check OK.
+- Jika deploy di subpath, `NEXT_PUBLIC_BASE_PATH` sudah sesuai.
+- CORS backend mengizinkan origin frontend.
+
+### Production build gagal
+
+Cek logs:
+
+```bash
+docker compose -f docker-compose.prod.yml logs dsl_backend
+docker compose -f docker-compose.prod.yml logs dsl_frontend
+```
+
+Build ulang tanpa cache:
+
+```bash
+docker compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml up -d
+```
+
+## Catatan Keamanan
+
+- Jangan commit file `.env` yang berisi secret.
+- Gunakan `JWT_SECRET`/`JWT_SECRET_KEY` yang kuat di production.
+- Batasi akses MySQL hanya dari host/container yang diperlukan.
+- Backup database dan volume upload secara berkala.
 
 ## License
 
-[Sesuaikan dengan license project Anda]
-
-## Contact
-
-[Tambahkan informasi kontak atau link dokumentasi tambahan]
+Internal project.

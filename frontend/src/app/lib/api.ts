@@ -1,81 +1,32 @@
 import axios, { AxiosError } from "axios";
-import { GetServerSidePropsContext } from "next";
-import Cookies from "universal-cookie";
 
 import { UninterceptedApiError } from "../types/api";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:8080";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_ENDPOINT,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: BASE_URL,
   timeout: 20000,
-  timeoutErrorMessage: "Perikasa Kembali Koneksi Internet Anda.",
-  withCredentials: true, // Enable credentials for cookies
-});
-
-let context = <GetServerSidePropsContext>{};
-const isServer = () => {
-  return typeof window === "undefined";
-};
-
-api.defaults.withCredentials = true;
-
-api.interceptors.request.use(function (config) {
-  if (config.headers) {
-    let token: string | undefined;
-
-    if (isServer()) {
-      if (!context)
-        throw "Api Context not found. You must call `setApiContext(context)` before calling api on server-side";
-
-      const cookies = new Cookies(context.req?.headers.cookie);
-      // if in production
-
-      /** Get cookies from context if server side */
-      token = cookies.get("Authorization");
-    } else {
-      /** Get cookies from browser */
-      const browserCookies = new Cookies();
-      token = browserCookies.get("Authorization");
-    }
-
-    config.headers.Authorization = token ? `Bearer ${token}` : "";
-  }
-
-  return config;
+  timeoutErrorMessage: "Periksa kembali koneksi internet Anda.",
 });
 
 api.interceptors.response.use(
-  (config) => {
-    return config;
-  },
+  (config) => config,
   (error: AxiosError<UninterceptedApiError>) => {
-    // parse error
-    if (error.response?.data.message) {
-      return Promise.reject({
-        ...error,
-        response: {
-          ...error.response,
-          data: {
-            ...error.response.data,
-            message:
-              typeof error.response.data.message === "string"
-                ? error.response.data.message
-                : Object.values(error.response.data.message)[0][0],
-          },
-        },
-      });
+    const apiMessage = error.response?.data.message ?? error.response?.data.error;
+
+    if (apiMessage) {
+      const firstMessage =
+        typeof apiMessage === "string" ? apiMessage : Object.values(apiMessage)[0];
+      const message =
+        typeof firstMessage === "string" ? firstMessage : firstMessage?.[0] || "Terjadi kesalahan";
+
+      error.message = message;
+      return Promise.reject(error);
     }
+
     return Promise.reject(error);
   }
 );
-
-export const setApiContext = (_context: GetServerSidePropsContext) => {
-  context = _context;
-  return;
-};
 
 export default api;

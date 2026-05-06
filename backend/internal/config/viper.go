@@ -21,6 +21,10 @@ func NewViper() *viper.Viper {
 	config.SetDefault("SSO_CALLBACK_URL", "")
 	config.SetDefault("FRONTEND_URL", "http://localhost:3000")
 	config.SetDefault("BACKEND_PUBLIC_URL", "http://localhost:8080")
+	config.SetDefault("APP_TIMEZONE", "Asia/Jakarta")
+	config.SetDefault("ENABLE_CRON", false)
+	config.SetDefault("UPLOAD_DIR", "storage/uploads")
+	config.SetDefault("MAX_UPLOAD_SIZE", 5*1024*1024)
 
 	// Try to read .env file (optional for Docker)
 	config.SetConfigFile(".env")

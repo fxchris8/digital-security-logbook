@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import TopLoader from "@/components/top-loader";
 import { Toaster } from "@/components/ui/sonner";
 import Providers from "@/components/providers";
 
@@ -32,7 +31,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          <TopLoader />
           {children}
           <Toaster position="top-right" />
         </Providers>

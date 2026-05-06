@@ -11,5 +11,6 @@ export interface ApiError {
 }
 
 export type UninterceptedApiError = {
-  message: string | Record<string, string[]>;
+  message?: string | Record<string, string | string[]>;
+  error?: string | Record<string, string | string[]>;
 };
