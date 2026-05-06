@@ -16,14 +16,14 @@ services:
       DB_PASS: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME:-digital_logbook}
 
-      FRONTEND_URL: ${FRONTEND_URL:-https://pe.spil.co.id/dsl}
+      FRONTEND_URL: ${FRONTEND_URL:-https://px.spil.co.id/dsl}
       WEB_PORT: 8080
       ENV: production
       GIN_MODE: release
 
       JWT_SECRET_KEY: ${JWT_SECRET}
 
-      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-https://pe.spil.co.id/dsl-api}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-https://px.spil.co.id/dsl-api}
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Jakarta}
       UPLOAD_DIR: ${UPLOAD_DIR:-storage/uploads}
       MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-5242880}
@@ -47,9 +47,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-net"
-      - "traefik.http.routers.dsl-backend.rule=Host(`pe.spil.co.id`) && PathPrefix(`/dsl-api`)"
+      - "traefik.http.routers.dsl-backend.rule=Host(`px.spil.co.id`) && PathPrefix(`/dsl-api`)"
       - "traefik.http.routers.dsl-backend.entrypoints=websecure"
       - "traefik.http.routers.dsl-backend.tls=true"
+      - "traefik.http.routers.dsl-backend.priority=200"
       - "traefik.http.routers.dsl-backend.middlewares=strip-dsl-api"
       - "traefik.http.middlewares.strip-dsl-api.stripprefix.prefixes=/dsl-api"
       - "traefik.http.services.dsl-backend.loadbalancer.server.port=8080"
@@ -60,14 +61,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT:-https://pe.spil.co.id/dsl-api}
+        NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT:-https://px.spil.co.id/dsl-api}
         NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-/dsl}
 
     restart: always
 
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT:-https://pe.spil.co.id/dsl-api}
+      NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT:-https://px.spil.co.id/dsl-api}
       NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-/dsl}
       JWT_SECRET: ${JWT_SECRET}
 
@@ -84,9 +85,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-net"
-      - "traefik.http.routers.dsl-frontend.rule=Host(`pe.spil.co.id`) && (Path(`/dsl`) || PathPrefix(`/dsl/`))"
+      - "traefik.http.routers.dsl-frontend.rule=Host(`px.spil.co.id`) && PathPrefix(`/dsl`)"
       - "traefik.http.routers.dsl-frontend.entrypoints=websecure"
       - "traefik.http.routers.dsl-frontend.tls=true"
+      - "traefik.http.routers.dsl-frontend.priority=100"
       - "traefik.http.services.dsl-frontend.loadbalancer.server.port=3000"
 
 networks:

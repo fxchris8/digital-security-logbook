@@ -277,8 +277,8 @@ DB_NAME=digital_logbook
 
 JWT_SECRET=change-this-production-secret
 
-BACKEND_PUBLIC_URL=https://pe.spil.co.id/dsl-api
-NEXT_PUBLIC_API_ENDPOINT=https://pe.spil.co.id/dsl-api
+BACKEND_PUBLIC_URL=https://px.spil.co.id/dsl-api
+NEXT_PUBLIC_API_ENDPOINT=https://px.spil.co.id/dsl-api
 NEXT_PUBLIC_BASE_PATH=/dsl
 ```
 
@@ -306,9 +306,9 @@ docker compose -f docker-compose.prod.yml logs -f
 
 Sesuai label Traefik bawaan:
 
-- Frontend: `https://pe.spil.co.id/dsl`
-- Backend API: `https://pe.spil.co.id/dsl-api`
-- Health check: `https://pe.spil.co.id/dsl-api/health`
+- Frontend: `https://px.spil.co.id/dsl`
+- Backend API: `https://px.spil.co.id/dsl-api`
+- Health check: `https://px.spil.co.id/dsl-api/health`
 
 ### 6. Stop Production Service
 
