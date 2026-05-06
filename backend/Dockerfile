@@ -15,12 +15,8 @@ RUN go mod download
 # Source
 COPY . .
 
-# Build binaries
+# Build API binary. The logbook schema is bootstrapped by the API on startup.
 RUN CGO_ENABLED=0 GOOS=linux go build -o api ./cmd/api
-RUN CGO_ENABLED=0 GOOS=linux go build -o migrate ./cmd/migrate
-RUN CGO_ENABLED=0 GOOS=linux go build -o seed ./cmd/seed-csv
-RUN CGO_ENABLED=0 GOOS=linux go build -o seed-cfit ./cmd/seed-cfit
-RUN CGO_ENABLED=0 GOOS=linux go build -o clear-data ./cmd/clear-data
 
 
 # =========================
@@ -35,19 +31,11 @@ RUN apk --no-cache add ca-certificates curl netcat-openbsd tzdata
 
 # Copy binaries from builder
 COPY --from=builder /app/api .
-COPY --from=builder /app/migrate .
-COPY --from=builder /app/seed .
-COPY --from=builder /app/seed-cfit .
-COPY --from=builder /app/clear-data .
 
 # Copy entrypoint script
 COPY entrypoint.sh .
 RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 # RUN chmod +x entrypoint.sh
-
-# Copy necessary resources (fonts, seed data, etc)
-COPY fonts ./fonts
-COPY cmd/seed-csv/data ./cmd/seed-csv/data
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \

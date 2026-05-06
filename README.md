@@ -252,6 +252,8 @@ Production compose menggunakan `docker-compose.prod.yml` dengan container:
 - Traefik route `/dsl-api` untuk backend
 - Traefik route `/dsl` untuk frontend
 
+Backend route `/dsl-api` memakai strip prefix agar Gin tetap menerima path `/api/...` dan `/uploads/...`. Frontend route `/dsl` tidak memakai strip prefix karena Next.js dibuild dengan `NEXT_PUBLIC_BASE_PATH=/dsl`.
+
 ### 1. Siapkan Network Traefik
 
 Jika belum ada:
@@ -314,7 +316,7 @@ Sesuai label Traefik bawaan:
 docker compose -f docker-compose.prod.yml down
 ```
 
-Catatan: backend container menjalankan `./migrate` dan mencoba `./seed` melalui `backend/entrypoint.sh` saat startup. Jika tidak ingin seeder berjalan setiap container start, ubah `backend/entrypoint.sh` sebelum build image.
+Catatan: backend container menunggu koneksi database lalu menjalankan API. Schema logbook dibootstrap oleh API saat startup.
 
 ## Perintah Development
 

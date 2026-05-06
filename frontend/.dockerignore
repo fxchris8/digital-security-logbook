@@ -16,6 +16,9 @@ dist/
 # Development files
 *.md
 *.log
+.env
+.env.*
+!.env.example
 
 # IDE
 .vscode/
@@ -24,12 +27,6 @@ dist/
 # OS files
 .DS_Store
 Thumbs.db
-
-# Environment files (will be set via docker-compose)
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Testing
 coverage/

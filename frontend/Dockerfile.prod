@@ -57,7 +57,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "const path=(process.env.NEXT_PUBLIC_BASE_PATH||'')+'/login';require('http').get('http://localhost:3000'+path,(r)=>{process.exit(r.statusCode >= 200 && r.statusCode < 400 ? 0 : 1)})"
+  CMD node -e "const base=(process.env.NEXT_PUBLIC_BASE_PATH||'').replace(/\/+$/,'');require('http').get('http://localhost:3000'+base+'/guest',(r)=>{process.exit(r.statusCode >= 200 && r.statusCode < 400 ? 0 : 1)})"
 
 # Start the application
 CMD ["node", "server.js"]

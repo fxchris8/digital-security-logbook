@@ -1,5 +1,3 @@
-version: "3.8"
-
 volumes:
   backend_storage:
 
@@ -9,7 +7,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    env_file: .env
     restart: always
 
     environment:
@@ -17,15 +14,9 @@ services:
       DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME:-tds}
+      DB_NAME: ${DB_NAME:-digital_logbook}
 
-      # SSO_BASE_URL: ${SSO_BASE_URL:-http://host.docker.internal:5000}
-      # SSO_FRONTEND_URL: ${SSO_FRONTEND_URL:-http://localhost:5173}
-      # SSO_CLIENT_ID: ${SSO_CLIENT_ID:-client_29f1ebacc189d8f2162d95ea63acd6a5}
-      # SSO_CLIENT_SECRET: ${SSO_CLIENT_SECRET:-b919281f18a32cc008ba63016f7d89042bb006f1ae5f0748ab83049a1d8698d4}
-      # SSO_CALLBACK_URL: ${SSO_CALLBACK_URL:-https://pe.spil.co.id/tds-api/api/auth/sso/callback}
-      # FRONTEND_URL: ${FRONTEND_URL:-https://pe.spil.co.id/tds}
-
+      FRONTEND_URL: ${FRONTEND_URL:-https://pe.spil.co.id/dsl}
       WEB_PORT: 8080
       ENV: production
       GIN_MODE: release
@@ -33,6 +24,9 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET}
 
       BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-https://pe.spil.co.id/dsl-api}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Jakarta}
+      UPLOAD_DIR: ${UPLOAD_DIR:-storage/uploads}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-5242880}
 
     volumes:
       - backend_storage:/app/storage
@@ -67,15 +61,14 @@ services:
       dockerfile: Dockerfile.prod
       args:
         NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT:-https://pe.spil.co.id/dsl-api}
-        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-}
+        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-/dsl}
 
-    env_file: .env
     restart: always
 
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_ENDPOINT: ${NEXT_PUBLIC_API_ENDPOINT:-https://pe.spil.co.id/dsl-api}
-      NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-}
+      NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-/dsl}
       JWT_SECRET: ${JWT_SECRET}
 
     depends_on:
@@ -91,11 +84,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-net"
-      - "traefik.http.routers.dsl-frontend.rule=Host(`pe.spil.co.id`) && PathPrefix(`/dsl`)"
+      - "traefik.http.routers.dsl-frontend.rule=Host(`pe.spil.co.id`) && (Path(`/dsl`) || PathPrefix(`/dsl/`))"
       - "traefik.http.routers.dsl-frontend.entrypoints=websecure"
       - "traefik.http.routers.dsl-frontend.tls=true"
-      - "traefik.http.routers.dsl-frontend.middlewares=strip-dsl"
-      - "traefik.http.middlewares.strip-dsl.stripprefix.prefixes=/dsl"
       - "traefik.http.services.dsl-frontend.loadbalancer.server.port=3000"
 
 networks:
