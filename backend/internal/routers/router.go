@@ -14,12 +14,14 @@ type RouterConfig struct {
 }
 
 func (c *RouterConfig) Setup() {
-	c.App.GET("/health", func(ctx *gin.Context) {
+	healthHandler := func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"status":  "healthy",
 			"service": "logbook-qr-backend",
 		})
-	})
+	}
+	c.App.GET("/health", healthHandler)
+	c.App.HEAD("/health", healthHandler)
 
 	logbook := c.App.Group("/api/logbooks")
 	{
