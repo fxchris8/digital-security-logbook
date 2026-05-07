@@ -20,6 +20,7 @@ const getTodayDate = () => new Date().toISOString().slice(0, 10);
 const emptyValues: LogbookFormData = {
   tanggal: getTodayDate(),
   nama: "",
+  nomorTelepon: "",
   alamat: "",
   nomorPolisiKendaraan: "",
   fotoTandaPengenal: "",
@@ -88,6 +89,7 @@ export default function GuestPage() {
     const requiredFields: Array<keyof LogbookFormData> = [
       "tanggal",
       "nama",
+      "nomorTelepon",
       "alamat",
       "perusahaan",
       "janjiBertemuDengan",
@@ -262,6 +264,15 @@ export default function GuestPage() {
                   <Input
                     value={formValues.nama}
                     onChange={(event) => updateField("nama", event.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-slate-700">Nomor Telepon</label>
+                  <Input
+                    value={formValues.nomorTelepon}
+                    onChange={(event) => updateField("nomorTelepon", event.target.value)}
                     disabled={isLoading}
                   />
                 </div>

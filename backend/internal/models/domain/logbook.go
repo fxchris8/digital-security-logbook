@@ -8,6 +8,7 @@ type Logbook struct {
 	WaktuMasuk           string     `json:"waktuMasuk" gorm:"column:waktu_masuk"`
 	WaktuKeluar          string     `json:"waktuKeluar" gorm:"column:waktu_keluar"`
 	Nama                 string     `json:"nama" gorm:"column:nama"`
+	NomorTelepon         string     `json:"nomorTelepon" gorm:"column:nomor_telepon;type:longtext"`
 	Alamat               string     `json:"alamat" gorm:"column:alamat"`
 	NomorPolisiKendaraan string     `json:"nomorPolisiKendaraan" gorm:"column:nomor_polisi_kendaraan;type:longtext"`
 	FotoTandaPengenal    string     `json:"fotoTandaPengenal" gorm:"column:foto_tanda_pengenal;type:mediumtext"`

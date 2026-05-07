@@ -11,6 +11,7 @@ export interface LogbookEntry {
   waktuMasuk: string;
   waktuKeluar: string;
   nama: string;
+  nomorTelepon: string;
   alamat: string;
   nomorPolisiKendaraan: string;
   fotoTandaPengenal: string;
@@ -22,6 +23,7 @@ export interface LogbookEntry {
 export interface LogbookFormData {
   tanggal?: string;
   nama: string;
+  nomorTelepon: string;
   alamat: string;
   nomorPolisiKendaraan: string;
   fotoTandaPengenal: string;

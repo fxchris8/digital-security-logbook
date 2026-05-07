@@ -26,6 +26,7 @@ func (r *LogbookRepository) SelectAll(db *gorm.DB, filter *web.LogbookListReques
 			COALESCE(TIME_FORMAT(waktu_masuk, '%H:%i:%s'), '') AS waktu_masuk,
 			COALESCE(NULLIF(TIME_FORMAT(waktu_keluar, '%H:%i:%s'), '00:00:00'), '') AS waktu_keluar,
 			COALESCE(nama, '') AS nama,
+			COALESCE(nomor_telepon, '') AS nomor_telepon,
 			COALESCE(alamat, '') AS alamat,
 			COALESCE(nomor_polisi_kendaraan, '') AS nomor_polisi_kendaraan,
 			COALESCE(foto_tanda_pengenal, '') AS foto_tanda_pengenal,
@@ -48,6 +49,7 @@ func (r *LogbookRepository) SelectAll(db *gorm.DB, filter *web.LogbookListReques
 		queryBuilder.WriteString(`
 			AND (
 				LOWER(nama) LIKE ?
+				OR LOWER(nomor_telepon) LIKE ?
 				OR LOWER(alamat) LIKE ?
 				OR LOWER(nomor_polisi_kendaraan) LIKE ?
 				OR LOWER(perusahaan) LIKE ?
@@ -55,7 +57,7 @@ func (r *LogbookRepository) SelectAll(db *gorm.DB, filter *web.LogbookListReques
 				OR LOWER(keperluan) LIKE ?
 			)
 		`)
-		args = append(args, q, q, q, q, q, q)
+		args = append(args, q, q, q, q, q, q, q)
 	}
 
 	if filter.Page == "next" {

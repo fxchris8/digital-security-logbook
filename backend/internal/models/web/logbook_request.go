@@ -3,6 +3,7 @@ package web
 type GenerateLogbookQRRequest struct {
 	Tanggal              string `json:"tanggal"`
 	Nama                 string `json:"nama" binding:"required"`
+	NomorTelepon         string `json:"nomorTelepon" binding:"required"`
 	Alamat               string `json:"alamat" binding:"required"`
 	NomorPolisiKendaraan string `json:"nomorPolisiKendaraan"`
 	FotoTandaPengenal    string `json:"fotoTandaPengenal" binding:"required"`
@@ -14,6 +15,7 @@ type GenerateLogbookQRRequest struct {
 type UpdateLogbookRequest struct {
 	Tanggal              string `json:"tanggal"`
 	Nama                 string `json:"nama" binding:"required"`
+	NomorTelepon         string `json:"nomorTelepon" binding:"required"`
 	Alamat               string `json:"alamat" binding:"required"`
 	NomorPolisiKendaraan string `json:"nomorPolisiKendaraan"`
 	FotoTandaPengenal    string `json:"fotoTandaPengenal" binding:"required"`

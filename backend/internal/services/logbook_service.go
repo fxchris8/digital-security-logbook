@@ -286,6 +286,7 @@ func (service *LogbookService) GenerateQRCode(ctx context.Context, request *web.
 		WaktuMasuk:           now.Format("15:04:05"),
 		WaktuKeluar:          "",
 		Nama:                 request.Nama,
+		NomorTelepon:         request.NomorTelepon,
 		Alamat:               request.Alamat,
 		NomorPolisiKendaraan: strings.TrimSpace(request.NomorPolisiKendaraan),
 		FotoTandaPengenal:    photoReference,
@@ -336,6 +337,7 @@ func (service *LogbookService) Update(ctx context.Context, id int, request *web.
 		return nil, err
 	}
 	logbook.Nama = request.Nama
+	logbook.NomorTelepon = request.NomorTelepon
 	logbook.Alamat = request.Alamat
 	logbook.NomorPolisiKendaraan = strings.TrimSpace(request.NomorPolisiKendaraan)
 	logbook.FotoTandaPengenal = photoReference

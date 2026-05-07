@@ -36,6 +36,7 @@ interface LogbookDialogProps {
 
 const emptyValues: LogbookFormData = {
   nama: "",
+  nomorTelepon: "",
   alamat: "",
   nomorPolisiKendaraan: "",
   fotoTandaPengenal: "",
@@ -46,6 +47,7 @@ const emptyValues: LogbookFormData = {
 
 const requiredLabels: Partial<Record<keyof LogbookFormData, string>> = {
   nama: "Nama",
+  nomorTelepon: "Nomor telepon",
   alamat: "Alamat",
   fotoTandaPengenal: "Foto tanda pengenal",
   perusahaan: "Perusahaan",
@@ -83,6 +85,7 @@ export function LogbookDialog({
     if (isEdit && defaultValues) {
       setFormValues({
         nama: defaultValues.nama || "",
+        nomorTelepon: defaultValues.nomorTelepon || "",
         alamat: defaultValues.alamat || "",
         nomorPolisiKendaraan: defaultValues.nomorPolisiKendaraan || "",
         fotoTandaPengenal: defaultValues.fotoTandaPengenal || "",
@@ -140,6 +143,7 @@ export function LogbookDialog({
   const validateForm = () => {
     const requiredFields: Array<keyof LogbookFormData> = [
       "nama",
+      "nomorTelepon",
       "alamat",
       "fotoTandaPengenal",
       "perusahaan",
@@ -206,6 +210,15 @@ export function LogbookDialog({
               <Input
                 value={formValues.nama}
                 onChange={(event) => updateField("nama", event.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Nomor Telepon</label>
+              <Input
+                value={formValues.nomorTelepon}
+                onChange={(event) => updateField("nomorTelepon", event.target.value)}
                 disabled={isLoading}
               />
             </div>

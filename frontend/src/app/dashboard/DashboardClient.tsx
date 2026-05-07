@@ -210,7 +210,7 @@ export default function DashboardClient() {
 
         <div className="flex items-center gap-3">
           <Input
-            placeholder="Cari nama, alamat, nomor polisi, perusahaan, pihak yang ditemui, atau keperluan..."
+            placeholder="Cari nama, nomor telepon, alamat, nomor polisi, perusahaan, pihak yang ditemui, atau keperluan..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-[360px] bg-white shadow-sm"
@@ -231,6 +231,7 @@ export default function DashboardClient() {
               <TableHead className="text-center">Waktu Masuk</TableHead>
               <TableHead className="text-center">Waktu Keluar</TableHead>
               <TableHead className="text-center">Nama</TableHead>
+              <TableHead className="text-center">Nomor Telepon</TableHead>
               <TableHead className="text-center">Alamat</TableHead>
               <TableHead className="text-center">Nomor Polisi Kendaraan</TableHead>
               <TableHead className="text-center">Foto Selfie</TableHead>
@@ -243,7 +244,7 @@ export default function DashboardClient() {
           <TableBody>
             {logbooksLoading ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center py-8">
+                <TableCell colSpan={12} className="text-center py-8">
                   <div className="flex justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                   </div>
@@ -251,7 +252,7 @@ export default function DashboardClient() {
               </TableRow>
             ) : logbooksError ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center font-bold text-red-500 py-8">
+                <TableCell colSpan={12} className="text-center font-bold text-red-500 py-8">
                   Error: {(logbooksError as Error).message}
                 </TableCell>
               </TableRow>
@@ -271,6 +272,9 @@ export default function DashboardClient() {
                       {getLogbookValue(logbook, ["waktuKeluar"])}
                     </TableCell>
                     <TableCell className="text-center font-bold">{logbook.nama}</TableCell>
+                    <TableCell className="text-center">
+                      {getLogbookValue(logbook, ["nomorTelepon"])}
+                    </TableCell>
                     <TableCell className="text-center">
                       {getLogbookValue(logbook, ["alamat"])}
                     </TableCell>
@@ -336,7 +340,7 @@ export default function DashboardClient() {
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={11} className="text-center font-bold text-gray-400">
+                <TableCell colSpan={12} className="text-center font-bold text-gray-400">
                   No Data
                 </TableCell>
               </TableRow>
