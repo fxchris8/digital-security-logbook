@@ -37,10 +37,12 @@ func (r *LogbookRepository) SelectAll(db *gorm.DB, filter *web.LogbookListReques
 		WHERE
 	`)
 
-	if filter.Page == "next" {
+	if filter.Page == "next" && filter.AnchorID > 0 {
+		queryBuilder.WriteString("id < ?")
+	} else if filter.Page == "next" {
 		queryBuilder.WriteString("id > ?")
 	} else {
-		queryBuilder.WriteString("id < ?")
+		queryBuilder.WriteString("id > ?")
 	}
 	args = append(args, filter.AnchorID)
 
@@ -61,9 +63,9 @@ func (r *LogbookRepository) SelectAll(db *gorm.DB, filter *web.LogbookListReques
 	}
 
 	if filter.Page == "next" {
-		queryBuilder.WriteString(" ORDER BY id ASC LIMIT ?")
-	} else {
 		queryBuilder.WriteString(" ORDER BY id DESC LIMIT ?")
+	} else {
+		queryBuilder.WriteString(" ORDER BY id ASC LIMIT ?")
 	}
 	args = append(args, filter.PageSize+1)
 
