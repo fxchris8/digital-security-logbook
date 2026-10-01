@@ -6,7 +6,7 @@ FROM golang:1.24.0-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache gcc musl-dev
+RUN for i in 1 2 3 4 5; do apk add --no-cache gcc musl-dev && break || sleep 2; done
 
 # Dependencies
 COPY go.mod go.sum ./
@@ -27,7 +27,7 @@ FROM alpine:latest
 WORKDIR /app
 
 # Install runtime dependencies
-RUN apk --no-cache add ca-certificates curl netcat-openbsd tzdata
+RUN for i in 1 2 3 4 5; do apk --no-cache add ca-certificates curl netcat-openbsd tzdata && break || sleep 2; done
 
 # Copy binaries from builder
 COPY --from=builder /app/api .

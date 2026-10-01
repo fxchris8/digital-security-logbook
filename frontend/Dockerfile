@@ -7,7 +7,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install dependencies for development
-RUN apk add --no-cache libc6-compat
+RUN for i in 1 2 3 4 5; do apk add --no-cache libc6-compat && break || sleep 2; done
 
 # Copy package files
 COPY package.json package-lock.json* ./
