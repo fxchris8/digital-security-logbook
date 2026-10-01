@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Upload } from "lucide-react";
+import { Camera } from "lucide-react";
+import { CameraCaptureModal } from "@/components/CameraCaptureModal";
 
 import {
   Dialog,
@@ -78,6 +79,7 @@ export function LogbookDialog({
     generateQRMutation.isPending || uploadPhotoMutation.isPending || updateMutation.isPending;
   const [formValues, setFormValues] = React.useState<LogbookFormData>(emptyValues);
   const [photoPreview, setPhotoPreview] = React.useState("");
+  const [isCameraOpen, setIsCameraOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -108,34 +110,17 @@ export function LogbookDialog({
     }));
   };
 
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const input = event.currentTarget;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("File tanda pengenal harus berupa gambar.");
-      input.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ukuran foto maksimal 5 MB.");
-      input.value = "";
-      return;
-    }
-
+  const handleCapturedPhoto = async (file: File) => {
     try {
       updateField("fotoTandaPengenal", "");
       setPhotoPreview(await readFileAsDataURL(file));
       const uploadedPhoto = await uploadPhotoMutation.mutateAsync(file);
       updateField("fotoTandaPengenal", uploadedPhoto.path);
-      toast.success("Foto selfie berhasil diupload.");
+      toast.success("Foto kamera berhasil diupload.");
     } catch (error) {
       updateField("fotoTandaPengenal", "");
       setPhotoPreview("");
-      input.value = "";
-      const message = error instanceof Error ? error.message : "Gagal mengupload foto selfie.";
+      const message = error instanceof Error ? error.message : "Gagal mengupload foto kamera.";
       toast.error(message);
     }
   };
@@ -242,24 +227,23 @@ export function LogbookDialog({
             </div>
 
             <div className="grid gap-2 md:col-span-2">
-              <label className="text-sm font-medium">Foto Tanda Pengenal</label>
-              <label className="flex cursor-pointer items-center justify-center gap-3 rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-slate-100 has-disabled:cursor-not-allowed has-disabled:opacity-60">
-                <Upload className="h-4 w-4" />
+              <label className="text-sm font-medium">Foto Tanda Pengenal (Wajib dari Kamera)</label>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCameraOpen(true)}
+                disabled={isLoading}
+                className="flex items-center justify-center gap-3 rounded-md border border-dashed border-emerald-300 bg-emerald-50/50 py-5 text-sm font-medium text-slate-700 transition hover:border-emerald-500 hover:bg-emerald-100/60 hover:text-emerald-900"
+              >
+                <Camera className="h-4 w-4 text-emerald-600" />
                 <span>
                   {isPhotoUploading
                     ? "Mengupload foto..."
                     : formValues.fotoTandaPengenal
-                      ? "Ganti file gambar identitas"
-                      : "Pilih file gambar identitas"}
+                      ? "Ambil Ulang Foto Kamera"
+                      : "Buka Kamera untuk Ambil Foto Selfie"}
                 </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoUpload}
-                  disabled={isLoading}
-                />
-              </label>
+              </Button>
 
               {photoPreview ? (
                 <a
@@ -270,7 +254,7 @@ export function LogbookDialog({
                 >
                   <Image
                     src={photoPreview}
-                    alt="Preview tanda pengenal"
+                    alt="Preview selfie kamera"
                     width={640}
                     height={160}
                     unoptimized
@@ -279,6 +263,13 @@ export function LogbookDialog({
                 </a>
               ) : null}
             </div>
+
+            <CameraCaptureModal
+              open={isCameraOpen}
+              onOpenChange={setIsCameraOpen}
+              onCapture={handleCapturedPhoto}
+              title="Ambil Foto Tanda Pengenal"
+            />
 
             <div className="grid gap-2 md:col-span-2">
               <label className="text-sm font-medium">Alamat</label>

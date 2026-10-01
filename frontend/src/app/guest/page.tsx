@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { CalendarDays, CheckCircle2, Download, Printer, QrCode, Upload } from "lucide-react";
+import { CalendarDays, Camera, CheckCircle2, Download, Printer, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CameraCaptureModal } from "@/components/CameraCaptureModal";
 import {
   useGenerateLogbookQR,
   useUploadLogbookPhoto,
@@ -47,6 +48,8 @@ export default function GuestPage() {
   const isPhotoUploading = uploadPhotoMutation.isPending;
   const isLoading = generateQRMutation.isPending || isPhotoUploading;
 
+  const [isCameraOpen, setIsCameraOpen] = React.useState(false);
+
   const updateField = (name: keyof LogbookFormData, value: string) => {
     setFormValues((prev) => ({
       ...prev,
@@ -54,33 +57,18 @@ export default function GuestPage() {
     }));
   };
 
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const input = event.currentTarget;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("File tanda pengenal harus berupa gambar.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ukuran foto maksimal 5 MB.");
-      return;
-    }
-
+  const handleCapturedPhoto = async (file: File) => {
     try {
       updateField("fotoTandaPengenal", "");
       setPhotoPreview(await readFileAsDataURL(file));
       const uploadedPhoto = await uploadPhotoMutation.mutateAsync(file);
       updateField("fotoTandaPengenal", uploadedPhoto.path);
-      toast.success("Foto tanda pengenal berhasil diupload.");
+      toast.success("Foto selfie dari kamera berhasil diupload.");
     } catch (error) {
       updateField("fotoTandaPengenal", "");
       setPhotoPreview("");
-      input.value = "";
       const message =
-        error instanceof Error ? error.message : "Gagal mengupload foto tanda pengenal.";
+        error instanceof Error ? error.message : "Gagal mengupload foto selfie.";
       toast.error(message);
     }
   };
@@ -327,26 +315,29 @@ export default function GuestPage() {
                 </div>
 
                 <div className="grid gap-3 md:col-span-2">
-                  <label className="text-sm font-medium text-slate-700">Upload Foto Selfie</label>
-                  <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-slate-100 has-disabled:cursor-not-allowed has-disabled:opacity-60">
-                    <Upload className="h-4 w-4" />
+                  <label className="text-sm font-medium text-slate-700">Foto Selfie (Wajib dari Kamera)</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCameraOpen(true)}
+                    disabled={isLoading}
+                    className="flex h-auto items-center justify-center gap-3 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/50 py-5 text-sm font-medium text-slate-700 transition hover:border-emerald-500 hover:bg-emerald-100/60 hover:text-emerald-900"
+                  >
+                    <Camera className="h-5 w-5 text-emerald-600" />
                     <span>
-                      {isPhotoUploading ? "Mengupload foto..." : "Pilih file gambar identitas"}
+                      {isPhotoUploading
+                        ? "Mengupload foto..."
+                        : formValues.fotoTandaPengenal
+                          ? "Ambil Ulang Foto Kamera"
+                          : "Buka Kamera untuk Ambil Foto Selfie"}
                     </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handlePhotoUpload}
-                      disabled={isLoading}
-                    />
-                  </label>
+                  </Button>
 
                   {photoPreview ? (
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3">
                       <Image
                         src={photoPreview}
-                        alt="Preview tanda pengenal"
+                        alt="Preview selfie kamera"
                         width={900}
                         height={208}
                         unoptimized
@@ -356,6 +347,13 @@ export default function GuestPage() {
                   ) : null}
                 </div>
               </div>
+
+              <CameraCaptureModal
+                open={isCameraOpen}
+                onOpenChange={setIsCameraOpen}
+                onCapture={handleCapturedPhoto}
+                title="Ambil Foto Selfie / Tanda Pengenal"
+              />
 
               <div className="flex flex-wrap gap-3 pt-2">
                 <Button type="submit" disabled={isLoading}>

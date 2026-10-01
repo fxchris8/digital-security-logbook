@@ -87,3 +87,40 @@ func (r *LogbookRepository) Update(db *gorm.DB, logbook *domain.Logbook) error {
 func (r *LogbookRepository) Delete(db *gorm.DB, logbook *domain.Logbook) error {
 	return db.Delete(logbook).Error
 }
+
+func (r *LogbookRepository) SelectByDateRange(db *gorm.DB, startDate, endDate string, logbooks *[]domain.Logbook) error {
+	var queryBuilder strings.Builder
+	var args []interface{}
+
+	queryBuilder.WriteString(`
+		SELECT
+			id,
+			COALESCE(DATE_FORMAT(tanggal, '%Y-%m-%d'), '') AS tanggal,
+			COALESCE(TIME_FORMAT(waktu_masuk, '%H:%i:%s'), '') AS waktu_masuk,
+			COALESCE(NULLIF(TIME_FORMAT(waktu_keluar, '%H:%i:%s'), '00:00:00'), '') AS waktu_keluar,
+			COALESCE(nama, '') AS nama,
+			COALESCE(nomor_telepon, '') AS nomor_telepon,
+			COALESCE(alamat, '') AS alamat,
+			COALESCE(nomor_polisi_kendaraan, '') AS nomor_polisi_kendaraan,
+			COALESCE(foto_tanda_pengenal, '') AS foto_tanda_pengenal,
+			COALESCE(perusahaan, '') AS perusahaan,
+			COALESCE(janji_bertemu_dengan, '') AS janji_bertemu_dengan,
+			COALESCE(keperluan, '') AS keperluan
+		FROM data_logbook
+		WHERE 1=1
+	`)
+
+	if startDate != "" {
+		queryBuilder.WriteString(" AND LEFT(tanggal, 10) >= ?")
+		args = append(args, startDate)
+	}
+	if endDate != "" {
+		queryBuilder.WriteString(" AND LEFT(tanggal, 10) <= ?")
+		args = append(args, endDate)
+	}
+
+	queryBuilder.WriteString(" ORDER BY tanggal DESC, id DESC")
+
+	return db.Raw(queryBuilder.String(), args...).Scan(logbooks).Error
+}
+

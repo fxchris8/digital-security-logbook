@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Talent Development System",
-  description: "A web application for managing talent development.",
+  title: "Digital Security Logbook",
+  description: "",
   icons: {
     icon: "/images/logo1.png",
   },

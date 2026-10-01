@@ -202,3 +202,41 @@ export function useDeleteLogbook() {
     },
   });
 }
+
+export async function exportLogbooksToExcel(startDate?: string, endDate?: string) {
+  const normalizedBaseURL = getNormalizedBaseURL();
+  const params = new URLSearchParams();
+  if (startDate) params.append("start_date", startDate);
+  if (endDate) params.append("end_date", endDate);
+
+  const url = `${normalizedBaseURL}/api/logbooks/export-excel?${params.toString()}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gagal mendownload file Excel (${response.statusText})`);
+  }
+
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+
+  let filename = `logbook_export_${startDate || "all"}_to_${endDate || "all"}.xlsx`;
+  const disposition = response.headers.get("Content-Disposition");
+  if (disposition && disposition.includes("filename=")) {
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    if (match && match[1]) {
+      filename = match[1];
+    }
+  }
+
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}
+

@@ -22,6 +22,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
+	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 )
 
@@ -557,3 +558,156 @@ func (service *LogbookService) parseCheckoutToken(tokenString string) (int, erro
 
 	return int(logbookIDFloat), nil
 }
+
+func (service *LogbookService) ExportExcel(ctx context.Context, startDate, endDate string, w io.Writer) error {
+	_ = ctx
+	var logbooks []domain.Logbook
+	err := service.LogbookRepository.SelectByDateRange(service.DB, startDate, endDate, &logbooks)
+	if err != nil {
+		return fmt.Errorf("failed to fetch logbooks: %w", err)
+	}
+
+	f := excelize.NewFile()
+	defer f.Close()
+
+	sheet := "Logbook"
+	f.SetSheetName("Sheet1", sheet)
+
+	headers := []string{
+		"ID",
+		"Tanggal",
+		"Waktu Masuk",
+		"Waktu Keluar",
+		"Nama",
+		"Nomor Telepon",
+		"Alamat",
+		"Nomor Polisi",
+		"Foto Tanda Pengenal",
+		"Perusahaan",
+		"Janji Bertemu Dengan",
+		"Keperluan",
+	}
+
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold:  true,
+			Color: "#FFFFFF",
+			Size:  11,
+		},
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"#1E3A8A"},
+			Pattern: 1,
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "center",
+			Vertical:   "center",
+		},
+	})
+
+	for colIdx, header := range headers {
+		cell, _ := excelize.CoordinatesToCellName(colIdx+1, 1)
+		f.SetCellValue(sheet, cell, header)
+		f.SetCellStyle(sheet, cell, cell, headerStyle)
+	}
+	f.SetRowHeight(sheet, 1, 28)
+
+	centerStyle, _ := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			Horizontal: "center",
+			Vertical:   "center",
+		},
+	})
+
+	leftStyle, _ := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			Horizontal: "left",
+			Vertical:   "center",
+		},
+	})
+
+	httpClient := &http.Client{
+		Timeout: 2 * time.Second,
+	}
+
+	for i, item := range logbooks {
+		rowNum := i + 2
+		f.SetRowHeight(sheet, rowNum, 65)
+
+		f.SetCellValue(sheet, fmt.Sprintf("A%d", rowNum), item.ID)
+		f.SetCellValue(sheet, fmt.Sprintf("B%d", rowNum), item.Tanggal)
+		f.SetCellValue(sheet, fmt.Sprintf("C%d", rowNum), item.WaktuMasuk)
+		f.SetCellValue(sheet, fmt.Sprintf("D%d", rowNum), item.WaktuKeluar)
+		f.SetCellValue(sheet, fmt.Sprintf("E%d", rowNum), item.Nama)
+		f.SetCellValue(sheet, fmt.Sprintf("F%d", rowNum), item.NomorTelepon)
+		f.SetCellValue(sheet, fmt.Sprintf("G%d", rowNum), item.Alamat)
+		f.SetCellValue(sheet, fmt.Sprintf("H%d", rowNum), item.NomorPolisiKendaraan)
+		f.SetCellValue(sheet, fmt.Sprintf("J%d", rowNum), item.Perusahaan)
+		f.SetCellValue(sheet, fmt.Sprintf("K%d", rowNum), item.JanjiBertemuDengan)
+		f.SetCellValue(sheet, fmt.Sprintf("L%d", rowNum), item.Keperluan)
+
+		f.SetCellStyle(sheet, fmt.Sprintf("A%d", rowNum), fmt.Sprintf("D%d", rowNum), centerStyle)
+		f.SetCellStyle(sheet, fmt.Sprintf("E%d", rowNum), fmt.Sprintf("E%d", rowNum), leftStyle)
+		f.SetCellStyle(sheet, fmt.Sprintf("F%d", rowNum), fmt.Sprintf("H%d", rowNum), centerStyle)
+		f.SetCellStyle(sheet, fmt.Sprintf("J%d", rowNum), fmt.Sprintf("L%d", rowNum), leftStyle)
+
+		if strings.TrimSpace(item.FotoTandaPengenal) != "" {
+			photoRelPath := strings.TrimPrefix(strings.TrimSpace(item.FotoTandaPengenal), "/")
+			localFilePath := filepath.Join(service.UploadDir, strings.TrimPrefix(photoRelPath, "uploads/"))
+			if _, err := os.Stat(localFilePath); err != nil {
+				localFilePath = filepath.Join("storage", photoRelPath)
+			}
+
+			imgBytes, err := os.ReadFile(localFilePath)
+			if err != nil && service.BackendPublicURL != "" && strings.HasPrefix(service.BackendPublicURL, "http") {
+				imgURL := fmt.Sprintf("%s/%s", strings.TrimRight(service.BackendPublicURL, "/"), photoRelPath)
+				resp, httpErr := httpClient.Get(imgURL)
+				if httpErr == nil && resp.StatusCode == http.StatusOK {
+					imgBytes, _ = io.ReadAll(resp.Body)
+					resp.Body.Close()
+				}
+			}
+
+			if len(imgBytes) > 0 {
+				ext := strings.ToLower(filepath.Ext(photoRelPath))
+				if ext == "" {
+					ext = ".jpg"
+				}
+				cellName := fmt.Sprintf("I%d", rowNum)
+				_ = f.AddPictureFromBytes(sheet, cellName, &excelize.Picture{
+					Extension: ext,
+					File:      imgBytes,
+					Format:    &excelize.GraphicOptions{ScaleX: 0.15, ScaleY: 0.15, Positioning: "oneCell"},
+				})
+			} else {
+				f.SetCellValue(sheet, fmt.Sprintf("I%d", rowNum), "-")
+				f.SetCellStyle(sheet, fmt.Sprintf("I%d", rowNum), fmt.Sprintf("I%d", rowNum), centerStyle)
+			}
+		} else {
+			f.SetCellValue(sheet, fmt.Sprintf("I%d", rowNum), "-")
+			f.SetCellStyle(sheet, fmt.Sprintf("I%d", rowNum), fmt.Sprintf("I%d", rowNum), centerStyle)
+		}
+	}
+
+	colWidths := map[string]float64{
+		"A": 8,
+		"B": 14,
+		"C": 14,
+		"D": 14,
+		"E": 22,
+		"F": 18,
+		"G": 25,
+		"H": 18,
+		"I": 24,
+		"J": 20,
+		"K": 22,
+		"L": 25,
+	}
+
+	for col, width := range colWidths {
+		f.SetColWidth(sheet, col, col, width)
+	}
+
+	return f.Write(w)
+}
+

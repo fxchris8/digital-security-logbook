@@ -26,6 +26,7 @@ func (c *RouterConfig) Setup() {
 	logbook := c.App.Group("/api/logbooks")
 	{
 		logbook.GET("", c.LogbookController.FindAll)
+		logbook.GET("/export-excel", c.LogbookController.ExportExcel)
 		logbook.POST("/upload-photo", c.LogbookController.UploadPhoto)
 		logbook.POST("/generate-qr", c.LogbookController.GenerateQRCode)
 		logbook.GET("/checkout", c.LogbookController.CheckoutByToken)

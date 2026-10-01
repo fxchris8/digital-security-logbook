@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
-import { ChevronLeftIcon, ChevronRightIcon, Pencil, Plus, QrCode } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, Pencil, Plus, QrCode, FileSpreadsheet, Download, Calendar } from "lucide-react";
 import { IPaginationRequest, PageType } from "@/types/global-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,7 @@ import {
   useDeleteLogbook,
   useGetLogbookQR,
   useGetLogbooks,
+  exportLogbooksToExcel,
 } from "./_hooks/useLogbooks";
 import {
   AlertDialog,
@@ -74,6 +75,52 @@ export default function DashboardClient() {
   const [editingLogbook, setEditingLogbook] = useState<LogbookEntry | null>(null);
   const [deletingLogbook, setDeletingLogbook] = useState<LogbookEntry | null>(null);
   const [qrDialogData, setQRDialogData] = useState<LogbookQRResponse | null>(null);
+
+  // Date range and export state
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const applyPreset = (preset: "3months" | "1month" | "thisMonth") => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+
+    if (preset === "3months") {
+      const targetDate = new Date(year, month - 3, 1);
+      const startY = targetDate.getFullYear();
+      const startM = String(targetDate.getMonth() + 1).padStart(2, "0");
+      const lastDay = new Date(startY, targetDate.getMonth() + 1, 0).getDate();
+      setStartDate(`${startY}-${startM}-01`);
+      setEndDate(`${startY}-${startM}-${String(lastDay).padStart(2, "0")}`);
+    } else if (preset === "1month") {
+      const targetDate = new Date(year, month - 1, 1);
+      const startY = targetDate.getFullYear();
+      const startM = String(targetDate.getMonth() + 1).padStart(2, "0");
+      const lastDay = new Date(startY, targetDate.getMonth() + 1, 0).getDate();
+      setStartDate(`${startY}-${startM}-01`);
+      setEndDate(`${startY}-${startM}-${String(lastDay).padStart(2, "0")}`);
+    } else if (preset === "thisMonth") {
+      const startM = String(month + 1).padStart(2, "0");
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      setStartDate(`${year}-${startM}-01`);
+      setEndDate(`${year}-${startM}-${String(lastDay).padStart(2, "0")}`);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    toast.info("Menggenerasi file Excel beserta foto...");
+    try {
+      await exportLogbooksToExcel(startDate, endDate);
+      toast.success("Berhasil mengunduh data logbook ke Excel!");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Gagal mengunduh Excel";
+      toast.error(msg);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Reset pagination when search query changes
   useEffect(() => {
@@ -175,6 +222,98 @@ export default function DashboardClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Date Range & Export Excel Toolbar */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-slate-50/80 p-3 shadow-xs">
+        {/* Date Picker Controls & Presets */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <Calendar className="h-4 w-4 text-slate-500" />
+            <span>Filter Tanggal Export:</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                const val = e.target.value;
+                setStartDate(val);
+                if (!endDate) {
+                  setEndDate(val);
+                }
+              }}
+              className="h-9 w-[145px] bg-white text-xs shadow-xs"
+            />
+            <span className="text-xs text-slate-400">s/d</span>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="h-9 w-[145px] bg-white text-xs shadow-xs"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => applyPreset("3months")}
+              className="h-9 text-xs bg-white hover:bg-slate-100 font-medium"
+            >
+              3 Bulan Lalu
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => applyPreset("1month")}
+              className="h-9 text-xs bg-white hover:bg-slate-100 font-medium"
+            >
+              1 Bulan Lalu
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => applyPreset("thisMonth")}
+              className="h-9 text-xs bg-white hover:bg-slate-100 font-medium"
+            >
+              Bulan Ini
+            </Button>
+            {(startDate || endDate) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="h-9 text-xs text-slate-500 hover:text-slate-800"
+              >
+                Reset
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Export Excel Button */}
+        <Button
+          type="button"
+          onClick={handleExportExcel}
+          disabled={isExporting}
+          className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs flex items-center gap-2 shadow-xs transition-colors"
+        >
+          {isExporting ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          ) : (
+            <FileSpreadsheet className="h-4 w-4" />
+          )}
+          {isExporting ? "Mengunduh Excel..." : "Export Excel + Foto"}
+        </Button>
+      </div>
 
       {/* Filters Toolbar */}
       <div className="mb-4 flex items-center justify-between">

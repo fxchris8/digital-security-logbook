@@ -250,3 +250,26 @@ func (controller *LogbookController) Delete(ctx *gin.Context) {
 
 	ctx.JSON(response.Code, response)
 }
+
+func (controller *LogbookController) ExportExcel(ctx *gin.Context) {
+	startDate := ctx.Query("start_date")
+	endDate := ctx.Query("end_date")
+
+	filename := "logbook_export.xlsx"
+	if startDate != "" && endDate != "" {
+		filename = fmt.Sprintf("logbook_export_%s_to_%s.xlsx", startDate, endDate)
+	} else if startDate != "" {
+		filename = fmt.Sprintf("logbook_export_from_%s.xlsx", startDate)
+	} else if endDate != "" {
+		filename = fmt.Sprintf("logbook_export_until_%s.xlsx", endDate)
+	}
+
+	ctx.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+
+	err := controller.Service.ExportExcel(ctx.Request.Context(), startDate, endDate, ctx.Writer)
+	if err != nil {
+		controller.Log.Errorf("Error exporting excel: %v", err)
+	}
+}
+
